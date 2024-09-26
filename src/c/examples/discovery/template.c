@@ -56,11 +56,11 @@ static void dump_attributes (iot_logger_t *lc, devsdk_resource_attr_t attrs)
  * service.
  */
 static bool template_init
-(
-  void *impl,
-  struct iot_logger_t *lc,
-  const iot_data_t *config
-)
+  (
+    void *impl,
+    struct iot_logger_t *lc,
+    const iot_data_t *config
+  )
 {
   template_driver *driver = (template_driver *) impl;
   iot_log_debug (lc, "Template Init. Driver Config follows:");
@@ -82,10 +82,10 @@ static bool template_init
 /* Reconfigure is called if the driver configuration is updated.
  */
 static void template_reconfigure
-(
-  void *impl,
-  const iot_data_t *config
-)
+  (
+    void *impl,
+    const iot_data_t *config
+  )
 {
   iot_data_map_iter_t iter;
   template_driver *driver = (template_driver *) impl;
@@ -125,16 +125,63 @@ static void template_discover (void *impl, const char *request_id)
   devsdk_protocols *p3 = devsdk_protocols_new ("IP Address", map3, NULL);
   devsdk_protocols *p4 = devsdk_protocols_new ("IP Address", map4, NULL);
 
-  devsdk_discovered_device devs[] =
-  {
-    { "DiscoveredOne", NULL, p1, "First discovered device", NULL },
-    { "DiscoveredTwo", NULL, p2, "Second discovered device", NULL },
-    { "DiscoveredThree", NULL, p3, "Third discovered device", NULL },
-    { "DiscoveredFour", NULL, p4, "Fourth discovered device", NULL }
-  };
-  
+  //Create an array of discovered devices
+  // Add one device, publish event then sleep for 1 second
+  // Repeat until 4 devices are added
+  devsdk_discovered_device devs[4] = {0};
+  devsdk_publish_discovery_event (driver->svc, request_id, 0, 0);
+
+  //Add first Device
+  devs[0].name = "FirstDev";
+  devs[0].parent = NULL;
+  devs[0].protocols = p1;
+  devs[0].description = "First Discovered Devices";
+  devs[0].properties = NULL;
+
+  // Publish event
+  devsdk_publish_discovery_event (driver->svc, request_id, 25, 1);
+
+  // Wait 1 second
+  sleep(1);
+
+  //Add second Device
+  devs[1].name = "SecondDev";
+  devs[1].parent = NULL;
+  devs[1].protocols = p2;
+  devs[1].description = "Second Discovered Devices";
+  devs[1].properties = NULL;
+
+  // Publish event
+  devsdk_publish_discovery_event (driver->svc, request_id, 50, 2);
+
+  // Wait 1 second
+  sleep(1);
+
+  //Add third Device
+  devs[2].name = "ThirdDev";
+  devs[2].parent = NULL;
+  devs[2].protocols = p3;
+  devs[2].description = "Third Discovered Devices";
+  devs[2].properties = NULL;
+
+  // Publish event
+  devsdk_publish_discovery_event (driver->svc, request_id, 75, 3);
+
+  // Wait 1 second
+  sleep(1);
+
+  //Add fourth Device
+  devs[3].name = "FourthDev";
+  devs[3].parent = NULL;
+  devs[3].protocols = p1;
+  devs[3].description = "Fourth Discovered Devices";
+  devs[3].properties = NULL;
+
   // Publish event
   devsdk_publish_discovery_event (driver->svc, request_id, 100, 4);
+
+  // Wait 1 second
+  sleep(1);
 
   devsdk_add_discovered_devices (driver->svc, 4, devs);
 
@@ -161,15 +208,15 @@ static void template_discover (void *impl, const char *request_id)
  * which is defined in the device profile.
 */
 static bool template_get_handler
-(
-  void *impl,
-  const devsdk_device_t *device,
-  uint32_t nreadings,
-  const devsdk_commandrequest *requests,
-  devsdk_commandresult *readings,
-  const iot_data_t *options,
-  iot_data_t **exception
-)
+  (
+    void *impl,
+    const devsdk_device_t *device,
+    uint32_t nreadings,
+    const devsdk_commandrequest *requests,
+    devsdk_commandresult *readings,
+    const iot_data_t *options,
+    iot_data_t **exception
+  )
 {
   template_driver *driver = (template_driver *) impl;
 
@@ -201,15 +248,15 @@ static bool template_get_handler
  * which is defined in the device profile.
 */
 static bool template_put_handler
-(
-  void *impl,
-  const devsdk_device_t *device,
-  uint32_t nvalues,
-  const devsdk_commandrequest *requests,
-  const iot_data_t *values[],
-  const iot_data_t *options,
-  iot_data_t **exception
-)
+  (
+    void *impl,
+    const devsdk_device_t *device,
+    uint32_t nvalues,
+    const devsdk_commandrequest *requests,
+    const iot_data_t *values[],
+    const iot_data_t *options,
+    iot_data_t **exception
+  )
 {
   template_driver *driver = (template_driver *) impl;
   /* Access the location of the device to be accessed and log it */
@@ -233,7 +280,7 @@ static bool template_put_handler
       case IOT_DATA_BOOL:
         iot_log_debug (driver->lc, "  Value: %s", iot_data_bool (values[i]) ? "true" : "false");
         break;
-      /* etc etc */
+        /* etc etc */
       default:
         iot_log_debug (driver->lc, "  Value has unexpected type %s: %s", iot_data_type_name (values[i]), iot_data_to_json (values[i]));
     }
@@ -279,16 +326,16 @@ int main (int argc, char *argv[])
 
   /* Device Callbacks */
   devsdk_callbacks *templateImpls = devsdk_callbacks_init
-  (
-    template_init,
-    template_get_handler,
-    template_put_handler,
-    template_stop,
-    template_create_addr,
-    template_free_addr,
-    template_create_resource_attr,
-    template_free_resource_attr
-  );
+    (
+      template_init,
+      template_get_handler,
+      template_put_handler,
+      template_stop,
+      template_create_addr,
+      template_free_addr,
+      template_create_resource_attr,
+      template_free_resource_attr
+    );
   devsdk_callbacks_set_discovery (templateImpls, template_discover, NULL);
   devsdk_callbacks_set_reconfiguration (templateImpls, template_reconfigure);
 
@@ -340,4 +387,3 @@ int main (int argc, char *argv[])
   iot_data_free (confparams);
   return 0;
 }
-
